@@ -6,7 +6,7 @@ from pydantic import BaseModel
 import uvicorn
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
-
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 # ------------------
 # IMPORTS FROM YOUR CODE
 # ------------------
@@ -46,6 +46,14 @@ def find_providers(origin: str, destination: str) -> str:
     )
     response_json = response.json()
     return [provider["provider_name"] for provider in response_json["data"]]
+
+ASSISTANCE_PROMPT = """
+You are a helpful assistant developed by OPTIMAT, a team that provides transportation services for people with disabilities and seniors.
+You are able to find paratransit providers that can provide services between origin and destination addresses, and other criteria.
+
+Your goal is to ask for the origin and destination addresses, and other criteria, and then find the paratransit providers that can provide services between the origin and destination addresses, and other criteria.
+Please do not make up information, only use the information provided by the user.
+"""
 
 llama_tools = llm.bind_tools([find_providers])    
 
@@ -87,7 +95,7 @@ def chat_endpoint(request: ChatRequest):
     and returns ONLY the new AI messages.
     """
     # Convert the incoming messages to Langchain message types
-    history = []
+    history = [SystemMessage(content=ASSISTANCE_PROMPT)]
     for msg in request.messages:
         if msg["role"] == "ai":
             history.append(AIMessage(content=msg["content"]))
